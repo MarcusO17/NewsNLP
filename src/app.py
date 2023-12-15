@@ -1,4 +1,5 @@
 import streamlit as st
+from pathlib import Path
 import pandas as pd
 import plotly_express as px
 import plotly.graph_objects as go
@@ -66,7 +67,7 @@ def gen_pie_chart(df,site):
 
  
 def app():
-    main_df = pd.read_csv('./data/BBCNews.csv')
+    main_df = pd.read_csv(f'{Path(__file__).parent}/ data/BBCNews.csv')
 
     st.title("Narratives in Focus: Exploring Malaysia Through BBC's Lens")
 
