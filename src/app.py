@@ -66,7 +66,7 @@ def gen_pie_chart(df,site):
 
  
 def app():
-    main_df = pd.read_csv('data/BBCNews.csv')
+    main_df = pd.read_csv('./data/BBCNews.csv')
 
     st.title("Narratives in Focus: Exploring Malaysia Through BBC's Lens")
 
