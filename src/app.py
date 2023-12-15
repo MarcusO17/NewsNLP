@@ -3,15 +3,15 @@ from pathlib import Path
 import pandas as pd
 import plotly_express as px
 import plotly.graph_objects as go
-from wordcloud import WordCloud,ImageColorGenerator
+from wordcloud import WordCloud,ImageColorGenerator, STOPWORDS
 import numpy as np 
 import PIL.Image
-import matplotlib.pyplot as plt
-from nltk.corpus import stopwords
+
+
 
 
 def word_cloud_gen(df):
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(STOPWORDS)
     stop_words.update(['malaysia','malaysian','ex','correspondent'])
 
     malaysianFlag_mask =np.array(PIL.Image.open('assets/Flag_of_Malaysia.svg.png'))
