@@ -90,7 +90,7 @@ def app():
              """)
     st.write("Explained more at : [Medium Article](https://medium.com/@piocalderon/vader-sentiment-analysis-explained-f1c4f9101cd9)")
     
-    df_sentiment = pd.read_csv('data/BBCSentimentProcessed.csv',index_col=0)
+    df_sentiment = pd.read_csv(f'{Path(__file__).parent}/data/BBCSentimentProcessed.csv',index_col=0)
     st.table(data=df_sentiment.head(3))
 
     st.header('Visualisation Playground')
