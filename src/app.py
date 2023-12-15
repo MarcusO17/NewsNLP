@@ -12,7 +12,7 @@ import PIL.Image
 
 def word_cloud_gen(df):
     stop_words = set(STOPWORDS)
-    stop_words.update(['malaysia','malaysian','ex','correspondent'])
+    stop_words.update(['malaysia','malaysian','ex','correspondent','s'])
 
     malaysianFlag_mask =np.array(PIL.Image.open(f'{Path(__file__).parent}/assets/Flag_of_Malaysia.svg.png'))
     malaysianFlag_colormap =ImageColorGenerator(malaysianFlag_mask)
