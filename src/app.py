@@ -14,7 +14,7 @@ def word_cloud_gen(df):
     stop_words = set(STOPWORDS)
     stop_words.update(['malaysia','malaysian','ex','correspondent'])
 
-    malaysianFlag_mask =np.array(PIL.Image.open('assets/Flag_of_Malaysia.svg.png'))
+    malaysianFlag_mask =np.array(PIL.Image.open(f'{Path(__file__).parent}/assets/Flag_of_Malaysia.svg.png'))
     malaysianFlag_colormap =ImageColorGenerator(malaysianFlag_mask)
 
     sentiment_option = st.selectbox('Select sentiment category', ['Positive', 'Neutral', 'Negative'])
@@ -33,7 +33,7 @@ def word_cloud_gen(df):
     st.plotly_chart(fig)
 
 def sentiment_score_gen():
-    df = pd.read_csv('data/SentimentScoreBBC.csv')
+    df = pd.read_csv(f'{Path(__file__).parent}/data/SentimentScoreBBC.csv')
     fig = go.Figure()
     fig.update_layout(
     title="BBC News Report's Sentiment Score on Malaysia",
