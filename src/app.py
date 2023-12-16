@@ -32,6 +32,28 @@ def word_cloud_gen(df):
     
     st.plotly_chart(fig)
 
+    if sentiment_option == 'Positive':
+          st.write("""
+                The positive sentiment wordcloud simply displays words which have positive associations from
+                   BBC articles about Malaysia. It's a straightforward visual 
+                   summary of the 'good' language used in the titles and descriptions 
+                   of those articles.
+                   """)
+    if sentiment_option == 'Negative':
+        st.write("""
+                The negative sentiment wordcloud simply displays words which have negative associations from
+                   BBC articles about Malaysia. It's a straightforward visual 
+                   summary of the 'bad' language used in the titles and descriptions 
+                   of those articles.
+                   """)
+    if sentiment_option == 'Neutral':
+        st.write("""
+                The negative sentiment wordcloud simply displays words which have neutral associations from
+                   BBC articles about Malaysia. It's a straightforward visual 
+                   summary of the 'normal' language used in the titles and descriptions 
+                   of those articles.
+                   """)
+
 def sentiment_score_gen():
     df = pd.read_csv(f'{Path(__file__).parent}/data/SentimentScoreBBC.csv')
     fig = go.Figure()
@@ -59,11 +81,23 @@ def sentiment_score_gen():
     
     st.plotly_chart(fig)
 
+    st.write("""
+            We graphed the cumulative sentiment score over time for the BBC. 
+             Dates with positive sentiment scores were incremented by 1, 
+             negative scores by -1, and neutral scores remained at 0. 
+             This provides an overview of how sentiment changes over time in the BBC content.
+             """)
+
 def gen_pie_chart(df,site):
     sentiment_value_counts = df[df['site'] == site]['sentiment'].value_counts().to_list()
     fig = px.pie(df,values=sentiment_value_counts,names=df[df['site'] == site]['sentiment'].unique(),template='plotly_dark',title=site)
 
     st.plotly_chart(fig)
+
+    st.write(""" Each site represents the category under which the BBC classifies the article. 
+             Each pie chart illustrates the ratio of positive to negative sentiments, 
+             helping us identify which categories depict Malaysia in a positive light.
+             """)
 
  
 def app():
@@ -71,15 +105,15 @@ def app():
 
     st.title("Narratives in Focus: Exploring Malaysia Through BBC's Lens")
 
-    st.write("""Embark on a journey through Malaysia as we examine its stories through the lens of the BBC, a beacon of global journalism. 
-             In a world where media shapes perceptions, understanding the biases within news coverage is crucial.
-             By closely examining the language, tone, and framing of BBC articles, 
-             we strive to decode the underlying perspectives that influence how Malaysia, is viewed on the global stage.""")
+    st.write("""Take a dive into Malaysia's stories through the BBC's perspective—a global journalism hub. 
+             In a world where media molds opinions, understanding the biases in news coverage is key. 
+             We'll dig into BBC articles, examining language, tone, and framing to uncover the underlying perspectives 
+             that shape the global view of Malaysia. It's a laid-back exploration into the nuances of media representation.""")
 
     st.subheader("Data Acquisition")
-    st.write("""All data is scraped from the BBC website using Python. (13/12/2023) 
-             By searching for keywords like "Malaysia," we acquire up to 290 articles 
-             that the BBC has written about Malaysia.""")
+    st.write("""
+We used a script in Python to collect information from the BBC website. As of December 13, 2023, 
+             we searched for words like "Malaysia" and found about 290 articles written by the BBC about Malaysia.""")
     
     st.table(data=main_df.head(3))
 
