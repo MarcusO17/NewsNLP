@@ -1,14 +1,101 @@
 import streamlit as st
 from pathlib import Path
+import logging 
+import time as tm
 import pandas as pd
+from datetime import datetime, timedelta
 import plotly_express as px
+import requests
+from bs4 import BeautifulSoup
 import plotly.graph_objects as go
 from wordcloud import WordCloud,ImageColorGenerator, STOPWORDS
 import numpy as np 
 import PIL.Image
 
 
+def scraper(topic):
+    load_bar = st.progress(29, text="Scraping!")
+    page = 0
+    max_page = 29
+    total_articles = 0
+    
+    total_info = []
 
+    while page < max_page:
+        load_bar.progress(page+1)
+        tm.sleep(1)
+        page += 1
+        url = f"https://www.bbc.co.uk/search?q={topic}&d=SEARCH_PS&page={page}"
+        webpage = requests.get(url).text
+        soup = BeautifulSoup(webpage, "html.parser")
+        print(f'Printing {page}')   
+        for article in soup.find_all('div',class_='ssrcss-tq7xfh-PromoContent exn3ah99'):
+            total_articles += 1
+            title = article.find('span').text #get article titles
+            description = article.find('p',class_='ssrcss-1q0x1qg-Paragraph e1jhz7w10').text #get article descs
+            misc_list = article.find('ul',class_='ssrcss-1xpwu3-MetadataStripContainer eh44mf03') # get miscellanous info such as date published, section and area
+            
+            if misc_list is None:
+                continue
+
+            time, site, section = None, None, None
+
+            for list_item in misc_list.findAll('li'):
+                print(list_item.text)
+
+                if list_item.text.startswith('Published'):
+                    time = list_item.text.split('Published')[1]
+            
+                if list_item.text.startswith('Site'):
+                    site = list_item.text.split('Site')[1]
+            
+                if list_item.text.startswith('Section'):
+                    section = list_item.text.split('Section')[1]
+                
+            
+
+
+
+            row_info = [title,description,time,site,section]   
+            total_info.append(row_info)  
+
+    load_bar.empty()
+    return total_info
+
+def time_processor(date):
+    today = datetime.today().date()
+    
+    if date is None:
+        return None
+
+    if date.endswith('ago'):
+        if 'hour' in date:
+           date = today.strftime('%d %B %Y')
+        if 'days' in date:
+           date = (today - timedelta(days=int(date.split(' ')[0]))).strftime('%d %B %Y')
+    elif date[len(date)-4:].isnumeric() == False:
+           date = date + ' 2023'
+    return date
+
+
+def data_pipeline(info):
+    #Make DF
+    df = pd.DataFrame(info,columns=['title','description','publisheddate','section','site'])
+
+    #Convert Written Dates to Datetime OBJ
+    df['publisheddate'] = df['publisheddate'].apply(lambda x : time_processor(x))
+    df['publisheddate'] = pd.to_datetime(df['publisheddate'])
+    df = df.sort_values(by='publisheddate',ascending=False).reset_index(drop=True)
+
+    st.table(df)
+
+def topic_searcher():
+    st.title('Topic Searcher')
+
+    topic = st.text_input('Enter Topic :')
+    if len(topic) > 0:
+        info = scraper(topic)
+        data_pipeline(info)
 
 def word_cloud_gen(df):
     with st.spinner("Loading..."):
@@ -144,7 +231,7 @@ def app():
     st.sidebar.text("""Explore more here! 
 There's more to come!""")
     
-    sidebar_option = st.sidebar.selectbox("Select an option", ["Home", "Visualisation Playground", "About"])
+    sidebar_option = st.sidebar.selectbox("Select an option", ["Home", "Visualisation Playground", "About",'Topic Searcher'])
 
    
     if sidebar_option == "Home":
@@ -188,5 +275,8 @@ There's more to come!""")
         
     if sidebar_option == 'About':
         about()
+    
+    if sidebar_option == 'Topic Searcher':
+        topic_searcher()
 if __name__ == "__main__":
     app()
