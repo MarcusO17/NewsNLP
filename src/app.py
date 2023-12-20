@@ -1,10 +1,11 @@
 import streamlit as st
 from pathlib import Path
-import logging 
+from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
 import time as tm
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly_express as px
+import re
 import requests
 from bs4 import BeautifulSoup
 import plotly.graph_objects as go
@@ -22,17 +23,23 @@ def scraper(topic):
     total_info = []
 
     while page < max_page:
-        load_bar.progress(page+1)
+        load_bar.progress(int(100 * page / max_page))
         tm.sleep(1)
         page += 1
         url = f"https://www.bbc.co.uk/search?q={topic}&d=SEARCH_PS&page={page}"
         webpage = requests.get(url).text
         soup = BeautifulSoup(webpage, "html.parser")
         print(f'Printing {page}')   
+        if soup.find('div', class_='ssrcss-1qik2p5-Stack e1y4nx260'):
+            st.error('No Articles Found')
+            break
         for article in soup.find_all('div',class_='ssrcss-tq7xfh-PromoContent exn3ah99'):
             total_articles += 1
             title = article.find('span').text #get article titles
-            description = article.find('p',class_='ssrcss-1q0x1qg-Paragraph e1jhz7w10').text #get article descs
+            try:
+                description = article.find('p',class_='ssrcss-1q0x1qg-Paragraph e1jhz7w10').text #get article descs
+            except:
+                description = ""
             misc_list = article.find('ul',class_='ssrcss-1xpwu3-MetadataStripContainer eh44mf03') # get miscellanous info such as date published, section and area
             
             if misc_list is None:
@@ -62,20 +69,58 @@ def scraper(topic):
     load_bar.empty()
     return total_info
 
-def time_processor(date):
-    today = datetime.today().date()
+def get_sentiment(polarity_score):
+    neutrality_threshold = 0.2
+    sentiment = polarity_score['compound']
+    if abs(sentiment) >= neutrality_threshold:
+        if sentiment > 0:
+            return 'Positive'
+        else:
+            return 'Negative'
+    else:
+        return 'Neutral'
     
-    if date is None:
-        return None
+def df_sentiment_scorer(df):
+    df = df.groupby(by=['publisheddate','sentiment'])['sentiment'].count().to_frame('count').reset_index()
+    df['score'] = 0
+    for index in range(1,len(df)):
+        if df.loc[index]['sentiment'] == 'Positive':
+            df.loc[index, 'score'] = df.loc[index - 1, 'score'] + ( 1 * df.loc[index, 'count'])
+        elif df.loc[index]['sentiment'] == 'Neutral':
+            df.loc[index, 'score'] = df.loc[index - 1, 'score'] + 0 
+        elif df.loc[index]['sentiment'] == 'Negative':
+            df.loc[index, 'score'] = df.loc[index - 1, 'score'] - ( 1 * df.loc[index, 'count'])
 
-    if date.endswith('ago'):
-        if 'hour' in date:
-           date = today.strftime('%d %B %Y')
-        if 'days' in date:
-           date = (today - timedelta(days=int(date.split(' ')[0]))).strftime('%d %B %Y')
-    elif date[len(date)-4:].isnumeric() == False:
-           date = date + ' 2023'
-    return date
+    return df
+
+
+
+def time_processor(date):
+    try:
+        today = datetime.today().date()
+        
+        if date is None:
+            return None
+
+        if date.startswith('Today'):
+            date = today.strftime('%d %B %Y')
+        
+        if date.startswith('in'):
+            date = today.strftime('%d %B %Y')
+        
+        if date.startswith('Tomorrow'):
+            date = (today + timedelta(days=1)).strftime('%d %B %Y')
+
+        if date.endswith('ago'):
+            if 'hour' in date:
+                date = today.strftime('%d %B %Y')
+            if 'day' in date:
+                date = (today - timedelta(days=int(date.split(' ')[0]))).strftime('%d %B %Y')
+        elif date[len(date)-4:].isnumeric() == False:
+            date = date + ' 2023'
+        return date
+    except Exception as e:
+        return None
 
 
 def data_pipeline(info):
@@ -85,9 +130,30 @@ def data_pipeline(info):
     #Convert Written Dates to Datetime OBJ
     df['publisheddate'] = df['publisheddate'].apply(lambda x : time_processor(x))
     df['publisheddate'] = pd.to_datetime(df['publisheddate'])
+
+    #process text
+    # Lower Case all text
+    df['title'] = df['title'].apply(lambda x:x.lower())
+    df['title'] = df['title'].apply(lambda x: re.sub('[\W]+',' ',x))
+    df['description'] = df['description'].apply(lambda x:x.lower())
+    df['description'] = df['description'].apply(lambda x: re.sub('[\W]+',' ',x))
+
     df = df.sort_values(by='publisheddate',ascending=False).reset_index(drop=True)
 
-    st.table(df)
+    return df
+
+def sentimentise(df):
+    sia = SIA()
+    for index in range(len(df)):
+        pol_score_title = sia.polarity_scores(df['title'][index])
+        pol_score_description = sia.polarity_scores(df['description'][index])
+        combined_score = {
+            'compound': (pol_score_title['compound'] + pol_score_description['compound']) / 2
+        }
+        df.loc[index,'sentiment'] = get_sentiment(combined_score)
+
+    return df
+
 
 def topic_searcher():
     st.title('Topic Searcher')
@@ -95,7 +161,13 @@ def topic_searcher():
     topic = st.text_input('Enter Topic :')
     if len(topic) > 0:
         info = scraper(topic)
-        data_pipeline(info)
+        if len(info) > 0:
+            df = data_pipeline(info)
+            df = sentimentise(df)
+            df = df_sentiment_scorer(df)
+            sentiment_score_gen(df2=df,df2name=topic)
+
+        
 
 def word_cloud_gen(df):
     with st.spinner("Loading..."):
@@ -176,6 +248,24 @@ def sentiment_score_gen():
                 negative scores by -1, and neutral scores remained at 0. 
                 This provides an overview of how sentiment changes over time in the BBC content.
                 """)
+
+
+def sentiment_score_gen(df2,df2name):
+    with st.spinner("Loading..."):
+        df = pd.read_csv(f'{Path(__file__).parent}/data/SentimentScoreBBC.csv')
+        fig = go.Figure()
+        fig.update_layout(
+        title=f"BBC News Report's Sentiment Score on Malaysia Vs {df2name}",
+        xaxis_title="Time",
+        yaxis_title="Sentiment Score",
+        template = 'plotly_dark'
+        )
+        fig.add_trace(go.Line(name="Sentiments of Malaysia",y=df['score'],x=df['publisheddate'], connectgaps=False))
+        fig.add_hline(y=0,annotation_text='Neutral Sentiment',line_dash="dash")
+        fig.add_trace(go.Line(name=f'Sentiments of {df2name}',y=df2['score'],x=df2['publisheddate'], connectgaps=False))
+
+        st.plotly_chart(fig)
+
 
 def gen_pie_chart(df,site):
     with st.spinner("Loading..."):
