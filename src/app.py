@@ -156,7 +156,11 @@ def sentimentise(df):
 
 
 def topic_searcher():
-    st.title('Topic Searcher')
+    st.title('Topic Sentiment Tracker')
+    st.write("""Simply input your topic of interest, 
+             and we'll scour the BBC portal, providing you with a clear 
+             and concise sentiment score over time. Track the highs and lows as 
+             we also compare this sentiment data against Malaysia's sentiment graph""")
 
     topic = st.text_input('Enter Topic :')
     if len(topic) > 0:
@@ -167,6 +171,15 @@ def topic_searcher():
             df = df_sentiment_scorer(df)
             sentiment_score_gen(df2=df,df2name=topic)
 
+    st.write("Caveats")
+    st.write("""Please be aware of certain limitations with our "Topic Sentiment Tracker." 
+            The sentiment analysis and comparison against Malaysia's graph 
+            are based solely on BBC portal news articles, excluding sports and other
+            categories in Malaysia's graph. Changes to the BBC portal's data structure
+            may impact accuracy. Sentiment analysis is inherently subjective, offering 
+            estimations rather than absolute measures, and temporal variations may be influenced 
+            by external factors. Users should consider these factors
+            """)
         
 
 def word_cloud_gen(df):
@@ -298,12 +311,15 @@ def visualisation_playground():
 
 def about():
     st.title('About Page.')
-    st.header('Roadmap')
-    st.write('Coming Soon')
-    st.write("""This is meant to be a short term project 
-             however I wanted to give a heads up that
-              there are some new features in the works for the 
-             platform such as live updates, a prediction system and more! Stay tuned for updates. Thank you.
+    st.header('Caveats')
+    st.write("""
+            - Our project relies on data from the BBC portal, and any changes to their setup may affect the accuracy of sentiment analysis.
+
+- Malaysia's sentiment graph excludes sports and other categories, providing a focused view on specific news topics.
+
+- Sentiment analysis provides estimations rather than precise measures, capturing general emotions expressed in articles.
+
+- External events and global sentiment shifts may influence sentiment trends, so results should be interpreted with this in mind.
              """)
     st.divider()
     st.header('Disclaimers')
