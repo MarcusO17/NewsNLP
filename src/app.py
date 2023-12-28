@@ -169,7 +169,7 @@ def topic_searcher():
             df = data_pipeline(info)
             df = sentimentise(df)
             df = df_sentiment_scorer(df)
-            sentiment_score_gen(df2=df,df2name=topic)
+            sentiment_score_gen_search(df2=df,df2name=topic)
 
     st.write("Caveats")
     st.write("""Please be aware of certain limitations with our "Topic Sentiment Tracker." 
@@ -263,7 +263,7 @@ def sentiment_score_gen():
                 """)
 
 
-def sentiment_score_gen(df2,df2name):
+def sentiment_score_gen_search(df2,df2name):
     with st.spinner("Loading..."):
         df = pd.read_csv(f'{Path(__file__).parent}/data/SentimentScoreBBC.csv')
         fig = go.Figure()
