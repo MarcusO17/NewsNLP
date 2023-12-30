@@ -1,5 +1,6 @@
 import streamlit as st
 from pathlib import Path
+import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
 import time as tm
 import pandas as pd
@@ -13,6 +14,7 @@ from wordcloud import WordCloud,ImageColorGenerator, STOPWORDS
 import numpy as np 
 import PIL.Image
 
+nltk.download('vader_lexicon')
 
 def scraper(topic):
     load_bar = st.progress(29, text="Scraping!")
